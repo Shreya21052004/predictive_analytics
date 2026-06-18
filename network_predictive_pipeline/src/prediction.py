@@ -107,10 +107,20 @@ BURSTY_METRICS = {
     "canonical_active_connections",
     "canonical_dns_queries",
     "canonical_throughput",
-}
+} 
+
+FEATURE_PRIORITY = [
+    "canonical_net_in_bytes",
+    "canonical_net_out_bytes",
+    "canonical_throughput",
+    "canonical_active_connections",
+    "canonical_dns_queries",
+    "canonical_health_pct",
+    "canonical_ddos_signal",
+]
 
 MIN_NONZERO_FRAC = 0.2
-MIN_POINTS_FOR_FORECAST = 5
+MIN_POINTS_FOR_FORECAST = 24
 MIN_STD_NORM = 0.01
 
 # >= this many hourly points -> aggregate to daily means before fitting trend
@@ -387,12 +397,33 @@ def behavioral_forecast(category, resource_history, row):
 
 
 def choose_forecast_feature(category, resource_history):
-    preferred = PRIMARY_FORECAST_FEATURE.get(category)
-    if preferred in resource_history.columns and resource_history[preferred].notna().any():
-        return preferred
-    for feature in canonical_features(category):
-        if feature in resource_history.columns and resource_history[feature].notna().any():
+
+    for feature in FEATURE_PRIORITY:
+
+        if feature not in resource_history.columns:
+            continue
+
+        valid_points = resource_history[feature].dropna()
+
+        if len(valid_points) >= MIN_POINTS_FOR_FORECAST:
             return feature
+
+    preferred = PRIMARY_FORECAST_FEATURE.get(category)
+
+    if (
+        preferred in resource_history.columns
+        and resource_history[preferred].notna().any()
+    ):
+        return preferred
+
+    for feature in canonical_features(category):
+
+        if (
+            feature in resource_history.columns
+            and resource_history[feature].notna().any()
+        ):
+            return feature
+
     return preferred
 
 
