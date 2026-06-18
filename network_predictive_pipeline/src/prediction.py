@@ -498,7 +498,13 @@ def failure_predictions(category, forecast, row):
     if positive(row.get("canonical_ddos_signal")):
         add("ddos_signal", 1, "current", row.get("canonical_ddos_signal"), "DDOS_SIGNAL_DETECTED")
     health = row.get("canonical_health_pct")
-    if health is not None and not pd.isna(health) and health < 90:
+
+    if (
+        health is not None
+        and not pd.isna(health)
+        and health > 0
+        and health < 90
+    ):
         add("health_pct", 90, "current", 100 - health, "BACKEND_HEALTH_DEGRADED")
     return failures
 
@@ -507,7 +513,14 @@ def recommendations(category, row, forecast, failures, anomaly_score):
     recs = []
     if any(item["failure_type"] == "DDOS_SIGNAL_DETECTED" for item in failures):
         recs.append("Enable or review DDoS protection and traffic filtering")
-    if row.get("canonical_health_pct") is not None and not pd.isna(row.get("canonical_health_pct")) and row.get("canonical_health_pct") < 90:
+    health = row.get("canonical_health_pct")
+
+    if (
+        health is not None
+        and not pd.isna(health)
+        and health > 0
+        and health < 90
+    ):
         recs.append("Check unhealthy backend targets")
     if row.get("canonical_subnet_util_pct") is not None and not pd.isna(row.get("canonical_subnet_util_pct")) and row.get("canonical_subnet_util_pct") >= 80:
         recs.append("Expand subnet capacity or clean unused IP allocations")
