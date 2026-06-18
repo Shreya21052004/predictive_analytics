@@ -284,5 +284,15 @@ def normalize_documents(documents):
         return pd.DataFrame()
 
     df = pd.DataFrame(rows)
+
     df["timestamp"] = pd.to_datetime(df["timestamp"], utc=True)
-    return df.sort_values(["category", "resource_id", "timestamp"]).reset_index(drop=True)
+
+    # Replace NaN and infinities globally
+    df.replace([float("inf"), float("-inf")], pd.NA, inplace=True)
+
+    return (
+        df.sort_values(
+            ["category", "resource_id", "timestamp"]
+        )
+        .reset_index(drop=True)
+    )
